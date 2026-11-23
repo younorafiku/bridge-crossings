@@ -1,10 +1,12 @@
 # Bridge Crossings tracker
 
-One page that shows every participant's progress through the steps of a reel.
+One page that shows every participant's progress through the steps of their work (filming reels, editing, and so on).
 
-- One colored bar per person. A full bar is one finished cycle (a reel). It then restarts and the counter above it goes up.
-- Left: rank and name. Middle: finished reels and the bar. Right: the next action and its deadline.
-- Ranking: most finished reels first, then the current bar, then whoever got there first.
+- One colored bar per person. A full bar is one finished cycle (a reel, an edit...). It then restarts and the counter above it goes up.
+- Left: rank and name. Middle: finished cycles and the bar. Right: the next action and its own deadline.
+- People are grouped in categories (Filming, Editing...). Each category has its own steps, cycle name and ranking.
+- Ranking inside a category: most finished cycles first, then the current bar, then whoever got there first.
+- A search box finds a name. When there is more than one category, buttons above the list show one category at a time.
 - Everyone with the link sees the same page. Only the admin can change anything.
 
 ## Files
@@ -12,13 +14,13 @@ One page that shows every participant's progress through the steps of a reel.
 | File | What it is |
 | --- | --- |
 | `index.html` | The page (look, admin tools, saving) |
-| `logic.js` | Ranking, bar and deadline rules, and every kind of change |
-| `data.json` | The saved data: steps, settings, people |
+| `logic.js` | Ranking, bar and deadline rules, search, and every kind of change |
+| `data.json` | The saved data: categories, settings, people |
 | `test.js` | Tests for the rules. Run `node --test` |
 
 ## Look at it without saving anything
 
-- `index.html?demo=1` shows sample people.
+- `index.html?demo=1` shows sample people in two categories.
 - `index.html?demo=1&admin=1` also lets you try the admin buttons. Nothing is saved.
 
 ## Admin
@@ -29,7 +31,13 @@ The admin edits on the page itself. Saving writes `data.json` to this repository
 2. Create a GitHub token at https://github.com/settings/personal-access-tokens/new. Choose **Only select repositories** and pick this repository. Under **Repository permissions**, set **Contents** to **Read and write**.
 3. Paste the token. It stays in that browser only.
 
-What the admin can do: add and remove people, change colors, mark the next step done, undo, set deadlines, change the steps, the name of a finished cycle (reel, video...), the title and the about text.
+What the admin can do:
+
+- **Add person**: name, category, colour and deadline. **Edit** changes them later, moves them to another category (their bar then restarts) or removes them.
+- **Mark the next step done** and **Undo**, on each row.
+- **Deadline**: every row has its own date field, so each person has their own deadline. Clear the field to remove it. If a category has "days to give for each next step", marking a step done sets the next deadline by itself. With 0 you always set it by hand.
+- **Categories**: add, rename, reorder or delete a category, set its steps in order, what a finished cycle is called, and the days per step. A category can be deleted only when nobody is in it, and one category always stays.
+- **Settings**: the title, the small line above it and the about text.
 
 Someone you add as a collaborator on the repository can make their own token and edit too.
 
@@ -37,7 +45,11 @@ A change shows for the admin straight away, and for everyone else after GitHub r
 
 ## Data
 
-`data.json` keeps `steps` (in order), and for each person the finished cycles (`cycles`) and the steps done in the current one (`done`). Names are shown as plain text.
+`data.json` keeps a list of `categories` (each with `steps`, `cycleName`, `cyclePlural`, `defaultDays`) and a list of `people`. Each person has a `categoryId`, finished cycles (`cycles`), the steps done in the current one (`done`) and their own `deadline`.
+
+A file saved by the first version (one list of steps for everyone) opens as a single category called Filming. Nothing is lost, and the next save writes the new format.
+
+Names are shown as plain text.
 
 ## Privacy
 

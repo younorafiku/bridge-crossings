@@ -14,8 +14,10 @@
 
   var MAX_STEPS = 12;
   var MAX_PEOPLE = 200;
+  var MAX_CATEGORIES = 8;
 
   function toInt(v, def) { var n = parseInt(v, 10); return isFinite(n) ? n : def; }
+  function clamp(n, lo, hi) { return Math.min(hi, Math.max(lo, n)); }
   function clip(s, max) { return String(s == null ? '' : s).replace(/\s+/g, ' ').trim().slice(0, max); }
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
   function pad(n) { return n < 10 ? '0' + n : String(n); }
@@ -38,26 +40,60 @@
     return Math.round((Date.UTC(b[0], b[1] - 1, b[2]) - Date.UTC(a[0], a[1] - 1, a[2])) / 86400000);
   }
 
-  function makeId() { return 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+  function makeId(prefix) { return (prefix || 'p') + Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+  function cleanSteps(list) {
+    return (Array.isArray(list) ? list : []).map(function (s) { return clip(s, 40); }).filter(Boolean).slice(0, MAX_STEPS);
+  }
+
+  // Categories are groups of people who follow the same steps (filming, editing...).
+  // A file from the first version has one list of steps for everyone: it becomes one category.
+  function normalizeCategories(d) {
+    var cats = [], seen = {};
+    (Array.isArray(d.categories) ? d.categories : []).slice(0, MAX_CATEGORIES).forEach(function (c, i) {
+      if (!c || typeof c !== 'object') return;
+      var name = clip(c.name, 30);
+      if (!name) return;
+      var id = clip(c.id, 40) || 'c' + i;
+      while (seen[id]) id += '_';
+      seen[id] = true;
+      var steps = cleanSteps(c.steps);
+      cats.push({
+        id: id,
+        name: name,
+        cycleName: clip(c.cycleName, 24) || 'reel',
+        cyclePlural: clip(c.cyclePlural, 24),
+        defaultDays: clamp(toInt(c.defaultDays, 0), 0, 60),
+        steps: steps.length ? steps : ['Done']
+      });
+    });
+    if (!cats.length) {
+      var legacy = cleanSteps(d.steps);
+      cats.push({
+        id: 'main',
+        name: 'Filming',
+        cycleName: clip(d.cycleName, 24) || 'reel',
+        cyclePlural: clip(d.cyclePlural, 24),
+        defaultDays: clamp(toInt(d.defaultDays, 0), 0, 60),
+        steps: legacy.length ? legacy : ['Hook', 'Film']
+      });
+    }
+    return cats;
+  }
 
   // Make any parsed JSON safe and consistent. Also rolls a bar that is past the
   // last step into a finished cycle (needed when the number of steps shrinks).
   function normalize(raw) {
     var d = raw && typeof raw === 'object' ? raw : {};
-    var steps = (Array.isArray(d.steps) ? d.steps : [])
-      .map(function (s) { return clip(s, 40); })
-      .filter(Boolean)
-      .slice(0, MAX_STEPS);
-    var n = steps.length;
+    var cats = normalizeCategories(d);
+    var byId = {};
+    cats.forEach(function (c) { byId[c.id] = c; });
     var out = {
       rev: Math.max(0, toInt(d.rev, 0)),
       title: clip(d.title, 40) || 'Bridge Crossings',
       subtitle: clip(d.subtitle, 40) || 'Progress',
       about: typeof d.about === 'string' ? d.about.trim().slice(0, 600) : '',
-      cycleName: clip(d.cycleName, 24) || 'reel',
-      cyclePlural: clip(d.cyclePlural, 24),
-      defaultDays: Math.min(60, Math.max(0, toInt(d.defaultDays, 0))),
-      steps: steps,
+      categories: cats,
       people: [],
       updatedAt: typeof d.updatedAt === 'string' ? d.updatedAt : ''
     };
@@ -65,13 +101,15 @@
       if (!p || typeof p !== 'object') return;
       var name = clip(p.name, 40);
       if (!name) return;
+      var cat = byId[p.categoryId] || cats[0];
+      var n = cat.steps.length;
       var cycles = Math.max(0, toInt(p.cycles, 0));
       var done = Math.max(0, toInt(p.done, 0));
-      if (n === 0) done = 0;
-      else if (done >= n) { cycles += Math.floor(done / n); done = done % n; }
+      if (done >= n) { cycles += Math.floor(done / n); done = done % n; }
       out.people.push({
         id: clip(p.id, 40) || 'p' + i,
         name: name,
+        categoryId: cat.id,
         color: validColor(p.color) ? p.color : PALETTE[i % PALETTE.length],
         cycles: cycles,
         done: done,
@@ -82,8 +120,14 @@
     return out;
   }
 
-  function cycleLabel(d, count) {
-    return count === 1 ? d.cycleName : (d.cyclePlural || d.cycleName + 's');
+  function findCategory(d, id) {
+    for (var i = 0; i < d.categories.length; i++) if (d.categories[i].id === id) return d.categories[i];
+    return null;
+  }
+  function categoryOf(d, p) { return findCategory(d, p.categoryId) || d.categories[0]; }
+
+  function cycleLabel(cat, count) {
+    return count === 1 ? cat.cycleName : (cat.cyclePlural || cat.cycleName + 's');
   }
 
   function started(p) { return p.cycles > 0 || p.done > 0; }
@@ -99,23 +143,32 @@
     return a.name.localeCompare(b.name);
   }
 
-  // [{person, rank}] from top to bottom. People who have not started get rank 0.
-  function ranked(d) {
+  // [{person, rank}] for one category, top to bottom. People who have not started get rank 0.
+  function ranked(d, categoryId) {
     var r = 0;
-    return d.people.slice().sort(compare).map(function (p) {
+    return d.people.filter(function (p) { return p.categoryId === categoryId; }).sort(compare).map(function (p) {
       return { person: p, rank: started(p) ? ++r : 0 };
     });
   }
 
+  // One block per category, in the saved order.
+  function sections(d) {
+    return d.categories.map(function (c) {
+      var items = ranked(d, c.id), total = 0;
+      items.forEach(function (it) { total += it.person.cycles; });
+      return { category: c, items: items, cycles: total };
+    });
+  }
+
   function personView(d, p) {
-    var n = d.steps.length;
+    var cat = categoryOf(d, p), n = cat.steps.length;
     return {
       cycles: p.cycles,
       done: p.done,
       n: n,
-      frac: n ? p.done / n : 0,
-      pct: n ? Math.round(p.done / n * 100) : 0,
-      next: n ? d.steps[p.done] : ''
+      frac: p.done / n,
+      pct: Math.round(p.done / n * 100),
+      next: cat.steps[p.done]
     };
   }
 
@@ -128,7 +181,7 @@
   function summary(d) {
     var total = 0;
     d.people.forEach(function (p) { total += p.cycles; });
-    return { people: d.people.length, cycles: total };
+    return { people: d.people.length, cycles: total, categories: d.categories.length };
   }
 
   function nextColor(d) {
@@ -136,6 +189,15 @@
     d.people.forEach(function (p) { used[p.color.toUpperCase()] = true; });
     for (var i = 0; i < PALETTE.length; i++) if (!used[PALETTE[i].toUpperCase()]) return PALETTE[i];
     return PALETTE[d.people.length % PALETTE.length];
+  }
+
+  // Name search: ignores capitals and accents, every word typed must appear in the name.
+  function fold(s) { return String(s).normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase(); }
+  function matchName(name, query) {
+    var words = fold(query).split(/\s+/).filter(Boolean);
+    if (!words.length) return true;
+    var n = fold(name);
+    return words.every(function (w) { return n.indexOf(w) !== -1; });
   }
 
   function find(d, id) {
@@ -149,9 +211,11 @@
       if (d.people.length >= MAX_PEOPLE) return;
       var name = clip(a.name, 40);
       if (!name) return;
+      var cat = findCategory(d, a.categoryId) || d.categories[0];
       d.people.push({
         id: clip(a.id, 40) || makeId(),
         name: name,
+        categoryId: cat.id,
         color: validColor(a.color) ? a.color : nextColor(d),
         cycles: 0,
         done: 0,
@@ -161,19 +225,26 @@
     },
 
     stepDone: function (d, a, ctx) {
-      var p = find(d, a.id), n = d.steps.length;
-      if (!p || !n) return;
+      var p = find(d, a.id);
+      if (!p) return;
+      var cat = categoryOf(d, p), n = cat.steps.length;
       p.done += 1;
       if (p.done >= n) { p.cycles += 1; p.done = 0; }
       p.progressAt = ctx.now;
-      p.deadline = d.defaultDays > 0 ? addDays(ctx.today, d.defaultDays) : '';
+      p.deadline = cat.defaultDays > 0 ? addDays(ctx.today, cat.defaultDays) : '';
     },
 
     undoStep: function (d, a) {
-      var p = find(d, a.id), n = d.steps.length;
-      if (!p || !n) return;
+      var p = find(d, a.id);
+      if (!p) return;
+      var n = categoryOf(d, p).steps.length;
       if (p.done > 0) p.done -= 1;
       else if (p.cycles > 0) { p.cycles -= 1; p.done = n - 1; }
+    },
+
+    setDeadline: function (d, a) {
+      var p = find(d, a.id);
+      if (p) p.deadline = validDate(a.deadline) ? a.deadline : '';
     },
 
     editPerson: function (d, a, ctx) {
@@ -183,9 +254,12 @@
       if (name) p.name = name;
       if (validColor(a.color)) p.color = a.color;
       p.deadline = validDate(a.deadline) ? a.deadline : '';
-      var cycles = Math.max(0, toInt(a.cycles, p.cycles));
-      var done = Math.max(0, toInt(a.done, p.done));
-      if (cycles !== p.cycles || done !== p.done) {
+      var cat = findCategory(d, a.categoryId);
+      var moved = !!cat && cat.id !== p.categoryId;
+      var cycles = Math.max(0, toInt(a.cycles, moved ? 0 : p.cycles));
+      var done = Math.max(0, toInt(a.done, moved ? 0 : p.done));
+      if (moved || cycles !== p.cycles || done !== p.done) {
+        if (moved) p.categoryId = cat.id;
         p.cycles = cycles;
         p.done = done;
         p.progressAt = (cycles > 0 || done > 0) ? ctx.now : '';
@@ -200,13 +274,39 @@
       var title = clip(a.title, 40); if (title) d.title = title;
       d.subtitle = clip(a.subtitle, 40) || d.subtitle;
       d.about = typeof a.about === 'string' ? a.about.trim().slice(0, 600) : d.about;
-      var cn = clip(a.cycleName, 24); if (cn) d.cycleName = cn;
-      d.cyclePlural = clip(a.cyclePlural, 24);
-      d.defaultDays = Math.min(60, Math.max(0, toInt(a.defaultDays, d.defaultDays)));
-      if (Array.isArray(a.steps)) {
-        var steps = a.steps.map(function (s) { return clip(s, 40); }).filter(Boolean).slice(0, MAX_STEPS);
-        if (steps.length) d.steps = steps;
+    },
+
+    // Adds the category when the id is new, otherwise changes it.
+    saveCategory: function (d, a) {
+      var name = clip(a.name, 30);
+      var steps = cleanSteps(a.steps);
+      if (!name || !steps.length) return;
+      var cat = findCategory(d, a.id);
+      if (!cat) {
+        if (d.categories.length >= MAX_CATEGORIES) return;
+        cat = { id: clip(a.id, 40) || makeId('c') };
+        d.categories.push(cat);
       }
+      cat.name = name;
+      cat.steps = steps;
+      cat.cycleName = clip(a.cycleName, 24) || cat.cycleName || 'reel';
+      cat.cyclePlural = clip(a.cyclePlural, 24);
+      cat.defaultDays = clamp(toInt(a.defaultDays, cat.defaultDays || 0), 0, 60);
+    },
+
+    // Only an empty category can go, and one must always remain.
+    removeCategory: function (d, a) {
+      if (d.categories.length < 2) return;
+      if (d.people.some(function (p) { return p.categoryId === a.id; })) return;
+      d.categories = d.categories.filter(function (c) { return c.id !== a.id; });
+    },
+
+    moveCategory: function (d, a) {
+      var i = -1;
+      d.categories.forEach(function (c, k) { if (c.id === a.id) i = k; });
+      var j = i + (a.dir < 0 ? -1 : 1);
+      if (i < 0 || j < 0 || j >= d.categories.length) return;
+      var t = d.categories[i]; d.categories[i] = d.categories[j]; d.categories[j] = t;
     }
   };
 
@@ -224,9 +324,10 @@
   }
 
   return {
-    PALETTE: PALETTE, MAX_STEPS: MAX_STEPS,
-    normalize: normalize, run: run, ranked: ranked, personView: personView,
-    cycleLabel: cycleLabel, deadlineInfo: deadlineInfo, summary: summary,
-    nextColor: nextColor, makeId: makeId, isoDate: isoDate, addDays: addDays, validDate: validDate
+    PALETTE: PALETTE, MAX_STEPS: MAX_STEPS, MAX_CATEGORIES: MAX_CATEGORIES,
+    normalize: normalize, run: run, ranked: ranked, sections: sections, personView: personView,
+    categoryOf: categoryOf, cycleLabel: cycleLabel, deadlineInfo: deadlineInfo, summary: summary,
+    nextColor: nextColor, makeId: makeId, isoDate: isoDate, addDays: addDays, validDate: validDate,
+    matchName: matchName
   };
 });

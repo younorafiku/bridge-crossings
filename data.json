@@ -1,26 +1,43 @@
 {
-  "rev": 4,
+  "rev": 5,
   "title": "Bridge Crossings",
   "subtitle": "Reels progress",
   "about": "One reel each: your field, explained to people outside it. A full bar is one finished reel. Check your next step and its deadline, and see how the whole group is moving.",
-  "cycleName": "reel",
-  "cyclePlural": "reels",
-  "defaultDays": 0,
-  "steps": [
-    "Topics and hooks",
-    "Script",
-    "Film"
+  "categories": [
+    {
+      "id": "main",
+      "name": "Filming",
+      "cycleName": "reel",
+      "cyclePlural": "reels",
+      "defaultDays": 0,
+      "steps": [
+        "Topics and hooks",
+        "Script",
+        "Film"
+      ]
+    }
   ],
   "people": [
     {
       "id": "pmwtktwhk7qia",
       "name": "Lina bennis",
+      "categoryId": "main",
       "color": "#E68364",
       "cycles": 0,
       "done": 1,
       "deadline": "",
       "progressAt": "2026-11-23T18:05:57.542Z"
+    },
+    {
+      "id": "pmwtmq59th7zm",
+      "name": "Hiba ENAM",
+      "categoryId": "main",
+      "color": "#B5D45A",
+      "cycles": 0,
+      "done": 0,
+      "deadline": "",
+      "progressAt": ""
     }
   ],
-  "updatedAt": "2026-11-23T18:05:57.542Z"
+  "updatedAt": "2026-11-23T18:58:55.409Z"
 }

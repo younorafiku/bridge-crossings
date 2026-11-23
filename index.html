@@ -18,12 +18,13 @@
   --sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
 }
 * { box-sizing: border-box; }
-html { background: var(--ink); color: var(--cream); -webkit-text-size-adjust: 100%; }
+html { background: var(--ink); color: var(--cream); color-scheme: dark; -webkit-text-size-adjust: 100%; }
 body { margin: 0; min-height: 100vh; font: 16px/1.45 var(--sans); }
 .wrap { max-width: 980px; margin: 0 auto; padding: 0 20px; }
 [hidden] { display: none !important; }
 button { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--cream); outline-offset: 2px; }
+.sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 .skip { position: absolute; left: -999px; top: 0; background: var(--cream); color: var(--ink); padding: 8px 12px; z-index: 90; }
 .skip:focus { left: 8px; top: 8px; }
 
@@ -33,25 +34,41 @@ button { font: inherit; color: inherit; }
 h1 { margin: 0 0 14px; font: 600 clamp(36px, 8vw, 58px)/1.04 var(--serif); letter-spacing: -.01em; }
 h1 em { font-style: italic; font-weight: 500; }
 .about { max-width: 62ch; margin: 0 0 18px; color: #DACFC1; white-space: pre-line; }
-.flow { list-style: none; margin: 0 0 14px; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; }
+.stats { margin: 0; color: var(--mute); font-size: 14px; }
+.stats b { color: var(--cream); font-weight: 600; }
+
+/* Search and categories */
+.tools { margin-top: 22px; display: grid; gap: 12px; }
+.search input { width: 100%; min-height: 48px; padding: 0 16px; border-radius: 12px; border: 1px solid var(--line); background: var(--ink2); color: var(--cream); font: inherit; }
+.search input::placeholder { color: var(--mute); }
+.chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip-btn { min-height: 40px; padding: 0 14px; border-radius: 99px; border: 1px solid var(--line); background: transparent; cursor: pointer; font-size: 14px; }
+.chip-btn small { margin-left: 6px; font-size: 12px; opacity: .7; }
+.chip-btn[aria-pressed=true] { background: var(--cream); color: var(--ink); border-color: var(--cream); font-weight: 600; }
+
+/* Categories and rows */
+.msg { margin: 18px 0 0; color: var(--late); }
+.note { margin: 28px 0 0; color: var(--mute); text-align: center; }
+.demo { margin: 18px 0 0; padding: 10px 14px; border: 1px dashed var(--line); border-radius: 10px; color: var(--mute); font-size: 14px; }
+.cat { margin-top: 34px; }
+.cat:first-child { margin-top: 24px; }
+.cat-head { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 2px 16px; }
+.cat h2 { margin: 0; font: 600 28px/1.1 var(--serif); }
+.cat-meta { margin: 0; color: var(--mute); font-size: 14px; }
+.flow { list-style: none; margin: 10px 0 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px 10px; align-items: center; }
 .flow li { display: flex; align-items: center; gap: 8px; font-size: 14px; }
 .flow li + li::before { content: ""; width: 16px; height: 1px; background: var(--line); }
 .flow .n { width: 22px; height: 22px; border-radius: 50%; border: 1px solid var(--line); display: grid; place-items: center; font-size: 12px; color: var(--mute); }
 .flow .end { color: var(--mute); }
-.stats { margin: 0; color: var(--mute); font-size: 14px; }
-.stats b { color: var(--cream); font-weight: 600; }
-
-/* Rows */
-.msg { margin: 18px 0 0; color: var(--late); }
-.demo { margin: 18px 0 0; padding: 10px 14px; border: 1px dashed var(--line); border-radius: 10px; color: var(--mute); font-size: 14px; }
 .rows { list-style: none; margin: 22px 0 0; padding: 0; display: grid; gap: 12px; }
+.cat .rows { margin-top: 14px; }
 .row {
   --c: #F1BF5B;
   display: grid; grid-template-columns: minmax(140px, 210px) minmax(0, 1fr) minmax(170px, 230px);
   gap: 12px 28px; align-items: center;
   background: var(--ink2); border: 1px solid var(--line); border-radius: 14px; padding: 16px 20px;
 }
-.row.empty { display: block; color: var(--mute); text-align: center; padding: 28px 20px; }
+.row.empty { display: block; color: var(--mute); text-align: center; padding: 24px 20px; }
 .who { display: flex; align-items: center; gap: 12px; min-width: 0; }
 .rank { flex: none; width: 30px; text-align: center; font: 600 26px/1 var(--serif); color: var(--mute); }
 .rank.top { color: var(--cream); }
@@ -68,7 +85,10 @@ h1 em { font-style: italic; font-weight: 500; }
 .due { display: block; margin-top: 2px; font-size: 13px; color: var(--mute); }
 .due.late { color: var(--late); }
 .due.today, .due.soon { color: var(--soon); }
-.acts { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
+.acts { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 8px; padding-top: 12px; border-top: 1px solid var(--line); }
+.dl { display: inline-flex; align-items: center; gap: 8px; }
+.dl span { font-size: 13px; color: var(--mute); }
+.dl input { min-height: 44px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--ink); color: var(--cream); font: inherit; }
 
 /* Buttons and fields */
 .btn { min-height: 44px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--line); background: transparent; cursor: pointer; }
@@ -86,7 +106,7 @@ h1 em { font-style: italic; font-weight: 500; }
 .adminbar .status { flex: 1 1 140px; font-size: 13px; color: var(--mute); }
 
 /* Footer */
-.foot { padding: 28px 20px 48px; color: var(--mute); font-size: 13px; }
+.foot { margin-top: 28px; margin-bottom: 48px; color: var(--mute); font-size: 13px; }
 .foot p { margin: 0 0 6px; max-width: 70ch; }
 
 /* Toast */
@@ -119,6 +139,11 @@ h1 em { font-style: italic; font-weight: 500; }
 .steprow .sn { color: var(--mute); font-size: 13px; text-align: center; }
 .ib { width: 40px; height: 44px; border-radius: 8px; border: 1px solid var(--line); background: transparent; cursor: pointer; }
 .ib:disabled { opacity: .3; cursor: not-allowed; }
+.catrow { display: grid; grid-template-columns: minmax(0, 1fr) 40px 40px auto; gap: 6px; align-items: center; padding: 10px 0; border-top: 1px solid var(--line); }
+.catrow .cn b { display: block; overflow-wrap: anywhere; }
+.catrow .cn small { display: block; color: var(--mute); font-size: 12px; overflow-wrap: anywhere; }
+.catlist { margin-bottom: 14px; border-bottom: 1px solid var(--line); }
+.hint { color: var(--mute) !important; font-size: 13px !important; }
 .formerr { min-height: 1.3em; margin: 0 0 8px !important; color: var(--late) !important; font-size: 14px !important; }
 .buttons { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; margin-top: 6px; }
 .buttons .spacer { flex: 1; }
@@ -133,6 +158,7 @@ h1 em { font-style: italic; font-weight: 500; }
   .next b { grid-area: act; }
   .next .due { grid-area: due; align-self: end; margin: 0; text-align: right; }
   .pair { grid-template-columns: 1fr; }
+  .flow li + li::before { display: none; }
 }
 @media (prefers-reduced-motion: reduce) {
   .bar i, .toast { transition: none; }
@@ -140,7 +166,7 @@ h1 em { font-style: italic; font-weight: 500; }
 </style>
 </head>
 <body>
-<a class="skip" href="#list">Skip to the ranking</a>
+<a class="skip" href="#sections">Skip to the ranking</a>
 <div id="adminbar" class="adminbar" hidden></div>
 
 <header class="head">
@@ -148,7 +174,6 @@ h1 em { font-style: italic; font-weight: 500; }
     <p class="eyebrow" id="subtitle"></p>
     <h1 id="title">Bridge <em>Crossings</em></h1>
     <p class="about" id="about"></p>
-    <ol class="flow" id="flow" aria-label="Steps of one finished cycle"></ol>
     <p class="stats" id="stats"></p>
   </div>
 </header>
@@ -156,7 +181,14 @@ h1 em { font-style: italic; font-weight: 500; }
 <main class="wrap">
   <p id="demo-note" class="demo" hidden>Demo data. Nothing here is saved.</p>
   <p id="msg" class="msg" role="status"></p>
-  <ol class="rows" id="list" aria-label="Ranking"><li class="row empty">Loading…</li></ol>
+  <div class="tools" id="tools" hidden>
+    <label class="search">
+      <span class="sr">Search by name</span>
+      <input id="q" type="search" placeholder="Search by name" autocomplete="off" enterkeyhint="search">
+    </label>
+    <div class="chips" id="chips" role="group" aria-label="Show one category" hidden></div>
+  </div>
+  <div id="sections"><ol class="rows"><li class="row empty">Loading…</li></ol></div>
   <noscript><p class="msg">This page needs JavaScript to show the progress.</p></noscript>
 </main>
 
@@ -179,7 +211,10 @@ h1 em { font-style: italic; font-weight: 500; }
   var qs = new URLSearchParams(location.search);
   var DEMO = qs.get('demo') === '1';
 
-  var state = { data: T.normalize({}), sha: '', token: '', admin: false, loaded: false, pending: 0, first: true, status: '', sig: '' };
+  var state = {
+    data: T.normalize({}), sha: '', token: '', admin: false, loaded: false, pending: 0, first: true,
+    status: '', sig: '', query: '', cat: 'all'
+  };
 
   // ---------- small helpers ----------
   function $(id) { return document.getElementById(id); }
@@ -351,7 +386,7 @@ h1 em { font-style: italic; font-weight: 500; }
       if (state.admin && e && e.status === 401) { handleError(e); return; }
       if (!state.loaded) {
         $('msg').textContent = 'Could not load the progress. Check your connection and refresh the page.';
-        $('list').textContent = '';
+        $('sections').textContent = '';
       }
     });
   }
@@ -386,30 +421,54 @@ h1 em { font-style: italic; font-weight: 500; }
     $('about').hidden = !d.about;
     document.title = d.title + ' · ' + d.subtitle;
 
-    var flow = $('flow');
-    flow.textContent = '';
-    flow.hidden = !d.steps.length;
-    d.steps.forEach(function (s, i) {
-      flow.appendChild(h('li', null, h('span', { class: 'n', text: String(i + 1) }), h('span', { text: s })));
-    });
-    if (d.steps.length) flow.appendChild(h('li', { class: 'end' }, '= 1 ' + d.cycleName + ' finished'));
-
     var sum = T.summary(d), stats = $('stats');
     stats.textContent = '';
     if (!sum.people) { stats.textContent = 'No participants yet.'; return; }
     stats.appendChild(h('b', { text: String(sum.people) }));
-    stats.appendChild(document.createTextNode(sum.people === 1 ? ' participant · ' : ' participants · '));
-    stats.appendChild(h('b', { text: String(sum.cycles) }));
-    stats.appendChild(document.createTextNode(' ' + T.cycleLabel(d, sum.cycles) + ' finished in total'));
+    stats.appendChild(document.createTextNode(sum.people === 1 ? ' participant' : ' participants'));
+    if (d.categories.length === 1) {
+      stats.appendChild(document.createTextNode(' · '));
+      stats.appendChild(h('b', { text: String(sum.cycles) }));
+      stats.appendChild(document.createTextNode(' ' + T.cycleLabel(d.categories[0], sum.cycles) + ' finished in total'));
+    } else {
+      stats.appendChild(document.createTextNode(' in '));
+      stats.appendChild(h('b', { text: String(d.categories.length) }));
+      stats.appendChild(document.createTextNode(' categories'));
+    }
   }
 
-  function rowFor(d, item, tdy, fills) {
+  function renderTools(d) {
+    $('tools').hidden = !d.people.length;
+    var chips = $('chips');
+    chips.textContent = '';
+    chips.hidden = d.categories.length < 2;
+    if (chips.hidden) return;
+    function chip(label, id, count) {
+      return h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': state.cat === id ? 'true' : 'false',
+        onclick: function () { state.cat = id; render(); } }, label, h('small', { text: String(count) }));
+    }
+    chips.appendChild(chip('All', 'all', d.people.length));
+    d.categories.forEach(function (c) {
+      chips.appendChild(chip(c.name, c.id, d.people.filter(function (p) { return p.categoryId === c.id; }).length));
+    });
+  }
+
+  function flowList(cat) {
+    var ol = h('ol', { class: 'flow', 'aria-label': 'Steps for ' + cat.name });
+    cat.steps.forEach(function (s, i) {
+      ol.appendChild(h('li', null, h('span', { class: 'n', text: String(i + 1) }), h('span', { text: s })));
+    });
+    ol.appendChild(h('li', { class: 'end' }, '= 1 ' + cat.cycleName + ' finished'));
+    return ol;
+  }
+
+  function rowFor(d, cat, item, tdy, fills) {
     var p = item.person, v = T.personView(d, p), info = T.deadlineInfo(p.deadline, tdy);
     var fill = h('i', { 'data-w': (v.frac * 100) + '%' });
     fills.push(fill);
     var bar = h('div', {
       class: 'bar', role: 'progressbar', 'aria-valuemin': '0', 'aria-valuemax': '100', 'aria-valuenow': String(v.pct),
-      'aria-label': p.name + ': ' + (v.n ? v.done + ' of ' + v.n + ' steps done in the current ' + d.cycleName : 'no steps set up yet')
+      'aria-label': p.name + ': ' + v.done + ' of ' + v.n + ' steps done in the current ' + cat.cycleName
     }, fill);
     for (var i = 1; i < v.n; i++) bar.appendChild(h('u', { style: { left: (i / v.n * 100) + '%' } }));
 
@@ -420,43 +479,65 @@ h1 em { font-style: italic; font-weight: 500; }
         h('span', { class: 'name', text: p.name })),
       h('div', { class: 'prog' },
         h('div', { class: 'prog-top' },
-          h('span', { class: 'count' }, h('b', { text: String(p.cycles) }), ' ' + T.cycleLabel(d, p.cycles) + ' finished'),
+          h('span', { class: 'count' }, h('b', { text: String(p.cycles) }), ' ' + T.cycleLabel(cat, p.cycles) + ' finished'),
           h('span', { text: v.pct + '%' })),
         bar),
       h('div', { class: 'next' },
         h('span', { class: 'lbl', text: 'Next' }),
-        h('b', { text: v.n ? v.next : '–' }),
-        h('span', { class: 'due ' + info.state, text: v.n ? dueText(info, p.deadline) : '' })));
+        h('b', { text: v.next }),
+        h('span', { class: 'due ' + info.state, text: dueText(info, p.deadline) })));
 
     if (state.admin) {
       row.appendChild(h('div', { class: 'acts' },
-        h('button', { class: 'btn primary', type: 'button', disabled: !v.n,
+        h('button', { class: 'btn primary', type: 'button',
           onclick: function () { runOp('stepDone', { id: p.id }, p.name + ': ' + v.next + ' done'); } },
-          'Mark “' + (v.next || '–') + '” done'),
+          'Mark “' + v.next + '” done'),
         h('button', { class: 'btn', type: 'button', disabled: !(p.cycles || p.done),
           onclick: function () { runOp('undoStep', { id: p.id }, p.name + ': undo'); } }, 'Undo'),
+        h('label', { class: 'dl' }, h('span', { text: 'Deadline' }),
+          h('input', { type: 'date', value: p.deadline, 'aria-label': 'Deadline for ' + p.name,
+            onchange: function (e) { runOp('setDeadline', { id: p.id, deadline: e.target.value }, p.name + ': deadline ' + (e.target.value || 'cleared')); } })),
         h('button', { class: 'btn', type: 'button', onclick: function () { openPerson(p); } }, 'Edit')));
     }
     return row;
   }
 
-  function renderRows(d) {
-    var list = $('list');
-    list.textContent = '';
-    var rk = T.ranked(d);
-    if (!rk.length) {
-      list.appendChild(h('li', { class: 'row empty', text: state.admin ? 'No one here yet. Use “Add person” above.' : 'No participants yet. Check back soon.' }));
+  function renderSections(d) {
+    var host = $('sections'), q = state.query.trim();
+    host.textContent = '';
+    if (!d.people.length) {
+      host.appendChild(h('ol', { class: 'rows' }, h('li', { class: 'row empty',
+        text: state.admin ? 'No one here yet. Use “Add person” above.' : 'No participants yet. Check back soon.' })));
       return;
     }
-    var fills = [], tdy = T.isoDate(new Date());
-    rk.forEach(function (item) { list.appendChild(rowFor(d, item, tdy, fills)); });
+    var fills = [], tdy = T.isoDate(new Date()), shown = 0;
+    T.sections(d).forEach(function (s, idx) {
+      var c = s.category;
+      if (state.cat !== 'all' && state.cat !== c.id) return;
+      var items = s.items.filter(function (it) { return T.matchName(it.person.name, q); });
+      if (q && !items.length) return;
+      shown++;
+      var list = h('ol', { class: 'rows' });
+      if (!items.length) list.appendChild(h('li', { class: 'row empty',
+        text: state.admin ? 'No one in this category yet.' : 'No participants in this category yet.' }));
+      items.forEach(function (it) { list.appendChild(rowFor(d, c, it, tdy, fills)); });
+      var n = s.items.length;
+      host.appendChild(h('section', { class: 'cat', 'aria-labelledby': 'cat-' + idx },
+        h('div', { class: 'cat-head' },
+          h('h2', { id: 'cat-' + idx, text: c.name }),
+          h('p', { class: 'cat-meta', text: n + (n === 1 ? ' participant · ' : ' participants · ') + s.cycles + ' ' + T.cycleLabel(c, s.cycles) + ' finished' })),
+        flowList(c), list));
+    });
+    if (!shown) host.appendChild(h('p', { class: 'note', text: q ? 'No one matches “' + q + '”.' : 'Nothing to show here.' }));
     var paint = function () { fills.forEach(function (f) { f.style.width = f.getAttribute('data-w'); }); };
     if (state.first) requestAnimationFrame(function () { requestAnimationFrame(paint); });
     else paint();
   }
 
   function renderFoot(d) {
-    $('howto').textContent = 'Ranked by finished ' + T.cycleLabel(d, 2) + ', then by the current bar. If both are equal, whoever got there first is higher.';
+    $('howto').textContent = d.categories.length === 1
+      ? 'Ranked by finished ' + T.cycleLabel(d.categories[0], 2) + ', then by the current bar. If both are equal, whoever got there first is higher.'
+      : 'Ranked within each category by finished cycles, then by the current bar. If both are equal, whoever got there first is higher.';
     $('updated').textContent = d.updatedAt && !DEMO ? 'Last update: ' + fmtStamp(d.updatedAt) : '';
     $('admin-link').hidden = state.admin || DEMO;
   }
@@ -470,15 +551,18 @@ h1 em { font-style: italic; font-weight: 500; }
       h('strong', { text: DEMO ? 'Demo admin' : 'Admin' }),
       h('span', { class: 'status', id: 'status', text: statusText() }),
       h('button', { class: 'btn primary', type: 'button', onclick: function () { openPerson(null); } }, 'Add person'),
-      h('button', { class: 'btn', type: 'button', onclick: openSettings }, 'Steps and settings'),
+      h('button', { class: 'btn', type: 'button', onclick: openCategories }, 'Categories'),
+      h('button', { class: 'btn', type: 'button', onclick: openSettings }, 'Settings'),
       h('button', { class: 'btn', type: 'button', onclick: signOut }, 'Sign out')));
   }
 
   function render() {
     var d = state.data;
+    if (state.cat !== 'all' && !d.categories.some(function (c) { return c.id === state.cat; })) state.cat = 'all';
     renderHead(d);
     renderAdminBar();
-    renderRows(d);
+    renderTools(d);
+    renderSections(d);
     renderFoot(d);
     state.first = false;
   }
@@ -498,6 +582,7 @@ h1 em { font-style: italic; font-weight: 500; }
         if (prev && prev.focus) prev.focus();
       }
     };
+    panel.addEventListener('submit', function (e) { e.preventDefault(); });
     panel.appendChild(h('h2', { text: title }));
     build(panel, m);
     document.addEventListener('keydown', onKey);
@@ -513,17 +598,59 @@ h1 em { font-style: italic; font-weight: 500; }
     return h('label', { class: 'field' }, h('span', { text: label }), input, hint ? h('small', { text: hint }) : null);
   }
 
-  function buttons(m, submitLabel, extra) {
+  function buttons(m, submitLabel, extra, onCancel) {
     return h('div', { class: 'buttons' }, extra || null, extra ? h('span', { class: 'spacer' }) : null,
-      h('button', { class: 'btn', type: 'button', onclick: m.close }, 'Cancel'),
+      h('button', { class: 'btn', type: 'button', onclick: onCancel || m.close }, 'Cancel'),
       h('button', { class: 'btn primary', type: 'submit' }, submitLabel));
   }
 
+  // The list of steps with move and remove buttons. It edits the array it is given.
+  function stepsField(steps, label, hint) {
+    var list = h('div', { class: 'steps' });
+    var addBtn = h('button', { class: 'btn', type: 'button', onclick: function () {
+      steps.push(''); paint();
+      var ins = list.querySelectorAll('input');
+      ins[ins.length - 1].focus();
+    } }, 'Add a step');
+    function move(i, j) { var t = steps[i]; steps[i] = steps[j]; steps[j] = t; paint(); }
+    function paint() {
+      list.textContent = '';
+      steps.forEach(function (s, i) {
+        var inp = h('input', { type: 'text', maxlength: '40', value: s, 'aria-label': 'Step ' + (i + 1) });
+        inp.addEventListener('input', function () { steps[i] = inp.value; });
+        list.appendChild(h('div', { class: 'steprow' },
+          h('span', { class: 'sn', text: String(i + 1) }), inp,
+          h('button', { type: 'button', class: 'ib', 'aria-label': 'Move step ' + (i + 1) + ' up', disabled: i === 0, onclick: function () { move(i, i - 1); } }, '↑'),
+          h('button', { type: 'button', class: 'ib', 'aria-label': 'Move step ' + (i + 1) + ' down', disabled: i === steps.length - 1, onclick: function () { move(i, i + 1); } }, '↓'),
+          h('button', { type: 'button', class: 'ib', 'aria-label': 'Remove step ' + (i + 1), disabled: steps.length === 1, onclick: function () { steps.splice(i, 1); paint(); } }, '✕')));
+      });
+      addBtn.disabled = steps.length >= T.MAX_STEPS;
+    }
+    paint();
+    return h('div', { class: 'field' }, h('span', { text: label }), list, addBtn, hint ? h('small', { text: hint }) : null);
+  }
+
   function openPerson(p) {
-    var d = state.data, adding = !p, n = d.steps.length;
+    var d = state.data, adding = !p, cats = d.categories;
+    var catId = adding
+      ? (state.cat !== 'all' && cats.some(function (c) { return c.id === state.cat; }) ? state.cat : cats[0].id)
+      : p.categoryId;
     var color = adding ? T.nextColor(d) : p.color;
+    function curCat() { return cats.filter(function (c) { return c.id === catId; })[0] || cats[0]; }
+    function autoDue() { var c = curCat(); return c.defaultDays > 0 ? T.addDays(T.isoDate(new Date()), c.defaultDays) : ''; }
+
     modal(adding ? 'Add person' : 'Edit ' + p.name, function (panel, m) {
       var name = h('input', { type: 'text', maxlength: '40', autocomplete: 'off', value: adding ? '' : p.name });
+      panel.appendChild(field('Name', name));
+
+      var sel = null;
+      if (cats.length > 1) {
+        sel = h('select');
+        cats.forEach(function (c) { sel.appendChild(h('option', { value: c.id, text: c.name })); });
+        sel.value = catId;
+        panel.appendChild(field('Category', sel, adding ? null : 'Changing the category starts their bar from zero.'));
+      }
+
       var custom = h('input', { type: 'color', value: color, 'aria-label': 'Custom colour' });
       var sw = h('div', { class: 'swatches', role: 'group', 'aria-label': 'Colour' });
       var swButtons = T.PALETTE.map(function (c) {
@@ -535,25 +662,35 @@ h1 em { font-style: italic; font-weight: 500; }
       function paint() { swButtons.forEach(function (b, i) { b.setAttribute('aria-pressed', T.PALETTE[i].toLowerCase() === color.toLowerCase() ? 'true' : 'false'); }); }
       custom.addEventListener('input', function () { color = custom.value; paint(); });
       paint();
-
-      var due = h('input', { type: 'date', value: adding ? (d.defaultDays > 0 ? T.addDays(T.isoDate(new Date()), d.defaultDays) : '') : p.deadline });
-      panel.appendChild(field('Name', name));
       panel.appendChild(h('div', { class: 'field' }, h('span', { text: 'Colour' }), sw));
+
+      var dueTouched = false;
+      var due = h('input', { type: 'date', value: adding ? autoDue() : p.deadline });
+      due.addEventListener('input', function () { dueTouched = true; });
       panel.appendChild(field(adding ? 'Deadline for the first step' : 'Deadline for the next step', due, 'Leave empty for no deadline.'));
 
-      var cycles, done;
+      var cycles = null, done = null;
+      function fillDone(idx) {
+        done.textContent = '';
+        var steps = curCat().steps;
+        for (var i = 0; i < steps.length; i++) {
+          done.appendChild(h('option', { value: String(i), text: i === 0 ? 'Nothing yet' : steps[i - 1] + ' done' }));
+        }
+        done.value = String(Math.min(idx, steps.length - 1));
+      }
       if (!adding) {
         cycles = h('input', { type: 'number', min: '0', max: '999', value: String(p.cycles) });
         done = h('select');
-        for (var i = 0; i < Math.max(n, 1); i++) {
-          var o = h('option', { value: String(i), text: i === 0 ? 'Nothing yet' : d.steps.slice(0, i).join(' + ') + ' done' });
-          if (i === p.done) o.selected = true;
-          done.appendChild(o);
-        }
+        fillDone(p.done);
         panel.appendChild(h('div', { class: 'pair' },
-          field('Finished ' + T.cycleLabel(d, 2), cycles, 'Only to correct a mistake.'),
+          field('Finished ' + T.cycleLabel(curCat(), 2), cycles, 'Only to correct a mistake.'),
           field('Current bar', done)));
       }
+      if (sel) sel.addEventListener('change', function () {
+        catId = sel.value;
+        if (adding) { if (!dueTouched) due.value = autoDue(); }
+        else { cycles.value = '0'; fillDone(0); }
+      });
 
       var removeBtn = null, armed = false;
       if (!adding) {
@@ -566,67 +703,98 @@ h1 em { font-style: italic; font-weight: 500; }
       panel.appendChild(m.errEl);
       panel.appendChild(buttons(m, adding ? 'Add' : 'Save', removeBtn));
 
-      panel.addEventListener('submit', function (e) {
-        e.preventDefault();
+      panel.addEventListener('submit', function () {
         var nm = name.value.trim();
         if (!nm) { m.errEl.textContent = 'Enter a name.'; name.focus(); return; }
-        if (adding) runOp('addPerson', { id: T.makeId(), name: nm, color: color, deadline: due.value }, 'Add ' + nm);
-        else runOp('editPerson', { id: p.id, name: nm, color: color, deadline: due.value, cycles: cycles.value, done: done.value }, 'Edit ' + nm);
+        if (adding) runOp('addPerson', { id: T.makeId(), name: nm, color: color, deadline: due.value, categoryId: catId }, 'Add ' + nm);
+        else runOp('editPerson', { id: p.id, name: nm, color: color, deadline: due.value, categoryId: catId, cycles: cycles.value, done: done.value }, 'Edit ' + nm);
         m.close();
       });
     });
   }
 
-  function openSettings() {
-    var d = state.data, steps = d.steps.slice();
-    modal('Steps and settings', function (panel, m) {
-      var title = h('input', { type: 'text', maxlength: '40', value: d.title });
-      var subtitle = h('input', { type: 'text', maxlength: '40', value: d.subtitle });
-      var about = h('textarea', { rows: '3', maxlength: '600' });
-      about.value = d.about;
-      var cn = h('input', { type: 'text', maxlength: '24', value: d.cycleName });
-      var cp = h('input', { type: 'text', maxlength: '24', value: d.cyclePlural, placeholder: d.cycleName + 's' });
-      var days = h('input', { type: 'number', min: '0', max: '60', value: String(d.defaultDays) });
-      var list = h('div', { class: 'steps' });
-      var addBtn = h('button', { class: 'btn', type: 'button', onclick: function () { steps.push(''); paint(); list.lastChild.querySelector('input').focus(); } }, 'Add a step');
-
-      function move(i, j) { var t = steps[i]; steps[i] = steps[j]; steps[j] = t; paint(); }
+  function openCategories() {
+    modal('Categories', function (panel, m) {
+      panel.appendChild(h('p', { text: 'A category is a group of people who follow the same steps, such as filming or editing. Each category has its own steps, bars and ranking.' }));
+      var list = h('div', { class: 'catlist' });
       function paint() {
+        var d = state.data;
         list.textContent = '';
-        steps.forEach(function (s, i) {
-          var inp = h('input', { type: 'text', maxlength: '40', value: s, 'aria-label': 'Step ' + (i + 1) });
-          inp.addEventListener('input', function () { steps[i] = inp.value; });
-          list.appendChild(h('div', { class: 'steprow' },
-            h('span', { class: 'sn', text: String(i + 1) }), inp,
-            h('button', { type: 'button', class: 'ib', 'aria-label': 'Move step ' + (i + 1) + ' up', disabled: i === 0, onclick: function () { move(i, i - 1); } }, '↑'),
-            h('button', { type: 'button', class: 'ib', 'aria-label': 'Move step ' + (i + 1) + ' down', disabled: i === steps.length - 1, onclick: function () { move(i, i + 1); } }, '↓'),
-            h('button', { type: 'button', class: 'ib', 'aria-label': 'Remove step ' + (i + 1), disabled: steps.length === 1, onclick: function () { steps.splice(i, 1); paint(); } }, '✕')));
+        d.categories.forEach(function (c, i) {
+          var n = d.people.filter(function (p) { return p.categoryId === c.id; }).length;
+          list.appendChild(h('div', { class: 'catrow' },
+            h('div', { class: 'cn' }, h('b', { text: c.name }), h('small', { text: n + (n === 1 ? ' person · ' : ' people · ') + c.steps.join(' → ') })),
+            h('button', { type: 'button', class: 'ib', 'aria-label': 'Move ' + c.name + ' up', disabled: i === 0,
+              onclick: function () { runOp('moveCategory', { id: c.id, dir: -1 }, 'Move ' + c.name); paint(); } }, '↑'),
+            h('button', { type: 'button', class: 'ib', 'aria-label': 'Move ' + c.name + ' down', disabled: i === d.categories.length - 1,
+              onclick: function () { runOp('moveCategory', { id: c.id, dir: 1 }, 'Move ' + c.name); paint(); } }, '↓'),
+            h('button', { type: 'button', class: 'btn', onclick: function () { m.close(); openCategory(c); } }, 'Edit')));
         });
-        addBtn.disabled = steps.length >= T.MAX_STEPS;
       }
       paint();
+      panel.appendChild(list);
+      panel.appendChild(h('div', { class: 'buttons' },
+        h('button', { class: 'btn', type: 'button', onclick: m.close }, 'Close'),
+        h('button', { class: 'btn primary', type: 'button', disabled: state.data.categories.length >= T.MAX_CATEGORIES,
+          onclick: function () { m.close(); openCategory(null); } }, 'Add category')));
+    });
+  }
 
-      panel.appendChild(h('div', { class: 'field' }, h('span', { text: 'Steps to finish one ' + d.cycleName + ', in order' }), list, addBtn,
-        h('small', { text: 'Everyone keeps their progress. If a bar is already past the new last step, it counts as a finished ' + d.cycleName + '.' })));
+  function openCategory(cat) {
+    var d = state.data, adding = !cat;
+    var steps = adding ? [''] : cat.steps.slice();
+    modal(adding ? 'Add category' : 'Edit ' + cat.name, function (panel, m) {
+      var name = h('input', { type: 'text', maxlength: '30', value: adding ? '' : cat.name, placeholder: 'For example: Editing' });
+      var cn = h('input', { type: 'text', maxlength: '24', value: adding ? 'reel' : cat.cycleName });
+      var cp = h('input', { type: 'text', maxlength: '24', value: adding ? '' : cat.cyclePlural, placeholder: 'Adds an s if empty' });
+      var days = h('input', { type: 'number', min: '0', max: '60', value: adding ? '0' : String(cat.defaultDays) });
+      panel.appendChild(field('Category name', name));
+      panel.appendChild(stepsField(steps, 'Steps to finish one cycle, in order',
+        'People keep their progress. If a bar is already past the new last step, it counts as a finished cycle.'));
       panel.appendChild(h('div', { class: 'pair' },
-        field('What a finished cycle is called', cn, 'Singular, for example “reel”.'),
+        field('What a finished cycle is called', cn, 'Singular, for example “reel” or “edit”.'),
         field('Plural (optional)', cp)));
-      panel.appendChild(field('Days to give for each next step', days, 'Sets the deadline automatically when a step is marked done. 0 means no automatic deadline.'));
+      panel.appendChild(field('Days to give for each next step', days, 'Sets the deadline automatically when a step is marked done. 0 means you set each deadline yourself.'));
+
+      var removeBtn = null, armed = false;
+      if (!adding) {
+        var members = d.people.filter(function (p) { return p.categoryId === cat.id; }).length;
+        removeBtn = h('button', { class: 'btn danger', type: 'button', disabled: members > 0 || d.categories.length < 2, onclick: function () {
+          if (!armed) { armed = true; removeBtn.textContent = 'Tap again to delete'; return; }
+          runOp('removeCategory', { id: cat.id }, 'Remove category ' + cat.name);
+          m.close(); openCategories();
+        } }, 'Delete category');
+        if (members > 0) panel.appendChild(h('p', { class: 'hint', text: 'To delete this category, first move or remove its ' + members + (members === 1 ? ' person.' : ' people.') }));
+      }
+      panel.appendChild(m.errEl);
+      panel.appendChild(buttons(m, 'Save', removeBtn, function () { m.close(); openCategories(); }));
+
+      panel.addEventListener('submit', function () {
+        var clean = steps.map(function (s) { return s.trim(); }).filter(Boolean);
+        if (!name.value.trim()) { m.errEl.textContent = 'Give the category a name.'; name.focus(); return; }
+        if (!clean.length) { m.errEl.textContent = 'Add at least one step.'; return; }
+        if (!cn.value.trim()) { m.errEl.textContent = 'Give the finished cycle a name.'; cn.focus(); return; }
+        runOp('saveCategory', { id: adding ? T.makeId('c') : cat.id, name: name.value, cycleName: cn.value, cyclePlural: cp.value, defaultDays: days.value, steps: clean },
+          (adding ? 'Add category ' : 'Update category ') + name.value.trim());
+        m.close(); openCategories();
+      });
+    });
+  }
+
+  function openSettings() {
+    var d = state.data;
+    modal('Settings', function (panel, m) {
+      var title = h('input', { type: 'text', maxlength: '40', value: d.title });
+      var subtitle = h('input', { type: 'text', maxlength: '40', value: d.subtitle });
+      var about = h('textarea', { rows: '4', maxlength: '600' });
+      about.value = d.about;
       panel.appendChild(field('Title', title));
       panel.appendChild(field('Small line above the title', subtitle));
       panel.appendChild(field('About the project', about, 'Shown at the top for everyone.'));
       panel.appendChild(m.errEl);
       panel.appendChild(buttons(m, 'Save'));
-
-      panel.addEventListener('submit', function (e) {
-        e.preventDefault();
-        var clean = steps.map(function (s) { return s.trim(); }).filter(Boolean);
-        if (!clean.length) { m.errEl.textContent = 'Add at least one step.'; return; }
-        if (!cn.value.trim()) { m.errEl.textContent = 'Give the finished cycle a name.'; cn.focus(); return; }
-        runOp('saveSettings', {
-          title: title.value, subtitle: subtitle.value, about: about.value,
-          cycleName: cn.value, cyclePlural: cp.value, defaultDays: days.value, steps: clean
-        }, 'Update settings');
+      panel.addEventListener('submit', function () {
+        runOp('saveSettings', { title: title.value, subtitle: subtitle.value, about: about.value }, 'Update settings');
         m.close();
       });
     });
@@ -644,8 +812,7 @@ h1 em { font-style: italic; font-weight: 500; }
       panel.appendChild(m.errEl);
       panel.appendChild(buttons(m, 'Sign in'));
 
-      panel.addEventListener('submit', function (e) {
-        e.preventDefault();
+      panel.addEventListener('submit', function () {
         var t = tok.value.trim();
         if (!t) { m.errEl.textContent = 'Paste the token first.'; tok.focus(); return; }
         m.errEl.textContent = 'Checking…';
@@ -679,27 +846,31 @@ h1 em { font-style: italic; font-weight: 500; }
   function demoData() {
     var t = T.isoDate(new Date());
     var iso = function (m) { return new Date(Date.now() - m * 3600000).toISOString(); };
+    var F = 'f', E = 'e';
     return T.normalize({
       rev: 1, title: 'Bridge Crossings', subtitle: 'Reels progress',
       about: 'One reel each: your field, explained to people outside it. A full bar is one finished reel. Check your next step and its deadline, and see how the whole group is moving.',
-      cycleName: 'reel', cyclePlural: 'reels', defaultDays: 7,
-      steps: ['Hook', 'Session', 'Film', 'Approve'],
+      categories: [
+        { id: F, name: 'Filming', cycleName: 'reel', cyclePlural: 'reels', defaultDays: 7, steps: ['Topics and hooks', 'Script', 'Film'] },
+        { id: E, name: 'Editing', cycleName: 'edit', cyclePlural: 'edits', defaultDays: 3, steps: ['Rough cut', 'Captions', 'Review', 'Export'] }
+      ],
       updatedAt: new Date().toISOString(),
       people: [
-        { id: 'a', name: 'Sara', color: '#E68364', cycles: 3, done: 1, deadline: T.addDays(t, 2), progressAt: iso(5) },
-        { id: 'b', name: 'Omar', color: '#72BFE7', cycles: 2, done: 3, deadline: T.addDays(t, 1), progressAt: iso(30) },
-        { id: 'c', name: 'Salma', color: '#F1BF5B', cycles: 2, done: 1, deadline: T.addDays(t, -2), progressAt: iso(60) },
-        { id: 'd', name: 'Youssef', color: '#65C49A', cycles: 1, done: 2, deadline: T.addDays(t, 5), progressAt: iso(20) },
-        { id: 'e', name: 'Hiba', color: '#A789DB', cycles: 1, done: 2, deadline: T.addDays(t, 0), progressAt: iso(90) },
-        { id: 'f', name: 'Mehdi', color: '#E8749E', cycles: 0, done: 3, deadline: T.addDays(t, 3), progressAt: iso(44) },
-        { id: 'g', name: 'Nour', color: '#B5D45A', cycles: 0, done: 1, deadline: T.addDays(t, 6), progressAt: iso(12) },
-        { id: 'h', name: 'Ilyas', color: '#4FC8D6', cycles: 0, done: 0, deadline: '', progressAt: '' }
+        { id: 'a', name: 'Sara', categoryId: F, color: '#E68364', cycles: 3, done: 1, deadline: T.addDays(t, 2), progressAt: iso(5) },
+        { id: 'b', name: 'Omar', categoryId: F, color: '#72BFE7', cycles: 2, done: 2, deadline: T.addDays(t, 1), progressAt: iso(30) },
+        { id: 'c', name: 'Salma', categoryId: F, color: '#F1BF5B', cycles: 2, done: 1, deadline: T.addDays(t, -2), progressAt: iso(60) },
+        { id: 'd', name: 'Youssef', categoryId: F, color: '#65C49A', cycles: 1, done: 2, deadline: T.addDays(t, 5), progressAt: iso(20) },
+        { id: 'e', name: 'Hélène', categoryId: F, color: '#A789DB', cycles: 0, done: 1, deadline: T.addDays(t, 9), progressAt: iso(90) },
+        { id: 'f', name: 'Mehdi', categoryId: E, color: '#E8749E', cycles: 4, done: 3, deadline: T.addDays(t, 0), progressAt: iso(44) },
+        { id: 'g', name: 'Nour', categoryId: E, color: '#B5D45A', cycles: 2, done: 1, deadline: T.addDays(t, 6), progressAt: iso(12) },
+        { id: 'h', name: 'Ilyas', categoryId: E, color: '#4FC8D6', cycles: 0, done: 0, deadline: '', progressAt: '' }
       ]
     });
   }
 
   // ---------- start ----------
   $('admin-link').addEventListener('click', openSignIn);
+  $('q').addEventListener('input', function () { state.query = this.value; renderSections(state.data); });
 
   if (DEMO) {
     state.data = demoData();

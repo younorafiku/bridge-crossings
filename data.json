@@ -1,5 +1,5 @@
 {
-  "rev": 24,
+  "rev": 25,
   "title": "Bridge Crossings",
   "subtitle": "Reels progress",
   "about": "One reel each: your field, explained to people outside it. A full bar is one finished reel. Check your next step and its deadline, and see how the whole group is moving.",
@@ -34,10 +34,10 @@
       "categoryId": "main",
       "color": "#B5D45A",
       "cycles": 1,
-      "done": 1,
+      "done": 2,
       "deadline": "",
-      "progressAt": "2026-11-23T19:21:53.797Z"
+      "progressAt": "2026-11-23T19:21:55.015Z"
     }
   ],
-  "updatedAt": "2026-11-23T19:21:53.797Z"
+  "updatedAt": "2026-11-23T19:21:55.015Z"
 }

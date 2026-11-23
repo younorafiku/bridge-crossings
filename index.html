@@ -52,6 +52,9 @@ h1 em { font-style: italic; font-weight: 500; }
 .chip-btn small { margin-left: 7px; font-size: 13px; color: var(--mute); }
 .chip-btn[aria-pressed=true] { background: var(--ink); border-color: var(--ink); color: #fff; font-weight: 600; }
 .chip-btn[aria-pressed=true] small { color: #C9D3D7; }
+.sortbar { align-items: center; }
+.sort-lbl { margin-right: 4px; font-size: 14px; color: var(--mute); }
+.sort-note { flex-basis: 100%; font-size: 13px; color: var(--mute); }
 
 /* Categories and rows */
 .msg { margin: 18px 0 0; color: var(--late); }
@@ -214,6 +217,7 @@ h1 em { font-style: italic; font-weight: 500; }
       <input id="q" type="search" placeholder="Search by name" autocomplete="off" enterkeyhint="search">
     </label>
     <div class="chips" id="chips" role="group" aria-label="Show one category" hidden></div>
+    <div class="chips sortbar" id="sortbar" role="group" aria-label="Sort rows by" hidden></div>
   </div>
   <div id="sections"><ol class="rows"><li class="row empty">Loading…</li></ol></div>
   <noscript><p class="msg">This page needs JavaScript to show the progress.</p></noscript>
@@ -242,7 +246,7 @@ h1 em { font-style: italic; font-weight: 500; }
 
   var state = {
     data: T.normalize({}), sha: '', token: '', admin: false, loaded: false, pending: 0, first: true,
-    status: '', sig: '', query: '', cat: 'all', hold: null, moved: false
+    status: '', sig: '', query: '', cat: 'all', hold: null, moved: false, sort: 'rank'
   };
 
   // ---------- small helpers ----------
@@ -307,6 +311,11 @@ h1 em { font-style: italic; font-weight: 500; }
   function readToken() { try { return localStorage.getItem(TOKEN_KEY) || ''; } catch (e) { return ''; } }
   function saveToken(t) { try { localStorage.setItem(TOKEN_KEY, t); } catch (e) { /* kept in memory only */ } }
   function clearToken() { try { localStorage.removeItem(TOKEN_KEY); } catch (e) { /* nothing to clear */ } }
+
+  var SORT_KEY = 'bridge-crossings-admin-sort';
+  function readSort() { try { return T.validSort(localStorage.getItem(SORT_KEY)); } catch (e) { return 'rank'; } }
+  function saveSort(id) { try { localStorage.setItem(SORT_KEY, id); } catch (e) { /* kept for this visit only */ } }
+  function sortLabel() { return (T.SORTS.filter(function (o) { return o.id === state.sort; })[0] || T.SORTS[0]).label.toLowerCase(); }
 
   var toastTimer;
   function toast(msg, isErr) {
@@ -480,8 +489,30 @@ h1 em { font-style: italic; font-weight: 500; }
     }
   }
 
+  // Admin only: how the rows are ordered. Everyone else always sees the ranking.
+  function renderSortBar(d) {
+    var bar = $('sortbar');
+    bar.textContent = '';
+    bar.hidden = !state.admin || d.people.length < 2;
+    if (bar.hidden) return;
+    bar.appendChild(h('span', { class: 'sort-lbl', text: 'Sort by' }));
+    T.SORTS.forEach(function (o) {
+      bar.appendChild(h('button', { type: 'button', class: 'chip-btn', 'aria-pressed': state.sort === o.id ? 'true' : 'false',
+        onclick: function () { setSort(o.id); } }, o.label));
+    });
+    if (state.sort !== 'rank') bar.appendChild(h('span', { class: 'sort-note', text: 'Only you see this order. Everyone else sees the ranking.' }));
+  }
+
+  function setSort(id) {
+    state.sort = T.validSort(id);
+    if (!DEMO) saveSort(state.sort);
+    state.hold = null;   // choosing a sort puts the rows in that order straight away
+    render();
+  }
+
   function renderTools(d) {
     $('tools').hidden = !d.people.length;
+    renderSortBar(d);
     var chips = $('chips');
     chips.textContent = '';
     chips.hidden = d.categories.length < 2;
@@ -559,13 +590,14 @@ h1 em { font-style: italic; font-weight: 500; }
   }
 
   // Admin view: rows stay where they are while the admin works, so they never move under a tap.
-  // The rank column still shows the true rank. "Update order" sorts the rows by it again.
+  // The rank column still shows the true rank. "Update order" puts the rows back in the chosen sort.
   function sectionsFor(d) {
     var secs = T.sections(d);
     state.moved = false;
     if (!state.admin) return secs;
     if (!state.hold) state.hold = {};
     secs.forEach(function (s) {
+      s.items = T.sortItems(s.items, state.sort);
       var id = s.category.id, ids = state.hold[id];
       if (!ids) { state.hold[id] = s.items.map(function (it) { return it.person.id; }); return; }
       var pos = {};
@@ -584,7 +616,7 @@ h1 em { font-style: italic; font-weight: 500; }
   function resortRows() {
     state.hold = null;
     render();
-    toast('Rows sorted by rank.');
+    toast('Rows sorted by ' + sortLabel() + '.');
   }
 
   function renderSections(d) {
@@ -636,7 +668,7 @@ h1 em { font-style: italic; font-weight: 500; }
       h('strong', { text: DEMO ? 'Demo admin' : 'Admin' }),
       h('span', { class: 'status', id: 'status', text: statusText() }),
       state.moved ? h('button', { class: 'btn hold', type: 'button', onclick: resortRows,
-        title: 'Rows stay where they are while you work. Tap to sort them by rank.' }, 'Update order') : null,
+        title: 'Rows stay where they are while you work. Tap to sort them by ' + sortLabel() + '.' }, 'Update order') : null,
       h('button', { class: 'btn primary', type: 'button', onclick: function () { openPerson(null); } }, 'Add person'),
       h('button', { class: 'btn', type: 'button', onclick: openCategories }, 'Categories'),
       h('button', { class: 'btn', type: 'button', onclick: openSettings }, 'Settings'),
@@ -968,6 +1000,7 @@ h1 em { font-style: italic; font-weight: 500; }
   } else {
     state.token = readToken();
     state.admin = !!state.token;
+    state.sort = readSort();
     refresh(true);
     setInterval(function () { if (!document.hidden && !state.pending) refresh(); }, 60000);
     document.addEventListener('visibilitychange', function () { if (!document.hidden && !state.pending) refresh(); });

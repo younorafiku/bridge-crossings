@@ -200,6 +200,45 @@
     return words.every(function (w) { return n.indexOf(w) !== -1; });
   }
 
+  // Admin-only ways to order the rows. The public page is always in rank order.
+  var SORTS = [
+    { id: 'rank', label: 'Rank' },
+    { id: 'deadline', label: 'Closest deadline' },
+    { id: 'step', label: 'Next step' },
+    { id: 'name', label: 'Name' },
+    { id: 'quiet', label: 'Waiting longest' }
+  ];
+
+  function validSort(id) {
+    return SORTS.some(function (s) { return s.id === id; }) ? id : 'rank';
+  }
+
+  // Compare two optional values: the ones that have a value come first (or last, when `emptyFirst`).
+  function byValue(x, y, emptyFirst) {
+    if (x && y) return x === y ? 0 : x < y ? -1 : 1;
+    if (!x && !y) return 0;
+    return (x ? -1 : 1) * (emptyFirst ? -1 : 1);
+  }
+
+  var SORT_FNS = {
+    // Late first, then soonest. No deadline goes last.
+    deadline: function (a, b) { return byValue(a.deadline, b.deadline, false); },
+    // Everyone whose next step is the first one together, then the second one, and so on.
+    step: function (a, b) { return a.done - b.done; },
+    name: function (a, b) { return a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }); },
+    // Longest since the last step was marked. Someone with no progress at all counts as waiting longest.
+    quiet: function (a, b) { return byValue(a.progressAt, b.progressAt, true); }
+  };
+
+  // items: [{person, rank}] in rank order. Returns a new array. Ties keep the rank order.
+  function sortItems(items, mode) {
+    var fn = SORT_FNS[validSort(mode)];
+    if (!fn) return items.slice();
+    return items.map(function (it, i) { return { it: it, i: i }; })
+      .sort(function (a, b) { return fn(a.it.person, b.it.person) || a.i - b.i; })
+      .map(function (x) { return x.it; });
+  }
+
   function find(d, id) {
     for (var i = 0; i < d.people.length; i++) if (d.people[i].id === id) return d.people[i];
     return null;
@@ -328,6 +367,6 @@
     normalize: normalize, run: run, ranked: ranked, sections: sections, personView: personView,
     categoryOf: categoryOf, cycleLabel: cycleLabel, deadlineInfo: deadlineInfo, summary: summary,
     nextColor: nextColor, makeId: makeId, isoDate: isoDate, addDays: addDays, validDate: validDate,
-    matchName: matchName
+    matchName: matchName, SORTS: SORTS, validSort: validSort, sortItems: sortItems
   };
 });

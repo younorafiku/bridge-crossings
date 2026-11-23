@@ -253,3 +253,68 @@ test('summary totals finished cycles across categories', () => {
   const d = base({ categories: [cat(), cat({ id: 'c2', name: 'Editing' })], people: [person('a', 'A', 2, 0), person('b', 'B', 3, 1, '', 'c2')] });
   assert.deepEqual(T.summary(d), { people: 2, cycles: 5, categories: 2 });
 });
+
+// ---- admin sorting ----
+const withDeadline = (p, deadline) => Object.assign(p, { deadline });
+const order = (d, mode) => T.sortItems(T.ranked(d, 'c1'), mode).map((x) => x.person.id);
+
+test('sort by rank leaves the ranking as it is', () => {
+  const d = base({ people: [person('a', 'Aya', 0, 1, '2026-11-02T00:00:00Z'), person('b', 'Bo', 2, 0, '2026-11-01T00:00:00Z')] });
+  assert.deepEqual(order(d, 'rank'), ['b', 'a']);
+  assert.deepEqual(order(d, 'nonsense'), ['b', 'a']);
+});
+
+test('sort by closest deadline: late first, then soonest, no deadline last, ties keep rank order', () => {
+  const d = base({
+    people: [
+      withDeadline(person('none', 'None', 3, 0), ''),
+      withDeadline(person('far', 'Far', 2, 0), '2026-12-10'),
+      withDeadline(person('late', 'Late', 0, 1, '2026-11-01T00:00:00Z'), '2026-11-18'),
+      withDeadline(person('soon', 'Soon', 1, 0, '2026-11-02T00:00:00Z'), '2026-11-24'),
+      withDeadline(person('soon2', 'Soon2', 0, 1, '2026-11-03T00:00:00Z'), '2026-11-24')
+    ]
+  });
+  assert.deepEqual(order(d, 'deadline'), ['late', 'soon', 'soon2', 'far', 'none']);
+});
+
+test('sort by next step groups people at the same step, first step first', () => {
+  const d = base({
+    categories: [cat({ steps: four })],
+    people: [person('x', 'X', 0, 3, '2026-11-01T00:00:00Z'), person('y', 'Y', 4, 0), person('z', 'Z', 1, 1, '2026-11-02T00:00:00Z'), person('w', 'W', 0, 0)]
+  });
+  assert.deepEqual(order(d, 'step'), ['y', 'w', 'z', 'x']);
+});
+
+test('sort by name ignores capitals and accents', () => {
+  const d = base({ people: [person('1', 'hiba', 0, 0), person('2', 'Hélène', 0, 0), person('3', 'Ali', 0, 0), person('4', 'Zed', 0, 0)] });
+  assert.deepEqual(order(d, 'name'), ['3', '2', '1', '4']);
+});
+
+test('sort by waiting longest: no progress first, then the oldest step, newest last', () => {
+  const d = base({
+    people: [
+      person('new', 'New', 1, 0, '2026-11-22T10:00:00Z'),
+      person('old', 'Old', 0, 1, '2026-11-05T10:00:00Z'),
+      person('never', 'Never', 0, 0),
+      person('mid', 'Mid', 2, 0, '2026-11-15T10:00:00Z')
+    ]
+  });
+  assert.deepEqual(order(d, 'quiet'), ['never', 'old', 'mid', 'new']);
+});
+
+test('sorting returns a new list and does not change the input or the ranks', () => {
+  const d = base({ people: [person('a', 'Zed', 2, 0), person('b', 'Ali', 1, 0)] });
+  const items = T.ranked(d, 'c1');
+  const before = JSON.stringify(items);
+  const sorted = T.sortItems(items, 'name');
+  assert.equal(JSON.stringify(items), before);
+  assert.deepEqual(sorted.map((x) => [x.person.id, x.rank]), [['b', 2], ['a', 1]]);
+});
+
+test('every sort option has an id and a label, and validSort falls back to rank', () => {
+  assert.deepEqual(T.SORTS.map((s) => s.id), ['rank', 'deadline', 'step', 'name', 'quiet']);
+  assert.ok(T.SORTS.every((s) => s.label));
+  assert.equal(T.validSort('deadline'), 'deadline');
+  assert.equal(T.validSort('x'), 'rank');
+  assert.equal(T.validSort(undefined), 'rank');
+});

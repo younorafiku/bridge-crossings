@@ -14,7 +14,7 @@ One page that shows every participant's progress through the steps of their work
 | File | What it is |
 | --- | --- |
 | `index.html` | The page (look, admin tools, saving) |
-| `logic.js` | Ranking, bar and deadline rules, search, and every kind of change |
+| `logic.js` | Ranking, bar and deadline rules, search, sorting, and every kind of change |
 | `data.json` | The saved data: categories, settings, people |
 | `test.js` | Tests for the rules. Run `node --test` |
 
@@ -38,6 +38,8 @@ What the admin can do:
 - **Deadline**: every row has its own date field, so each person has their own deadline. Clear the field to remove it. If a category has "days to give for each next step", marking a step done sets the next deadline by itself. With 0 you always set it by hand.
 - **Categories**: add, rename, reorder or delete a category, set its steps in order, what a finished cycle is called, and the days per step. A category can be deleted only when nobody is in it, and one category always stays.
 - **Settings**: the title, the small line above it and the about text.
+- **Sort by** (under the search box, admin only): Rank, Closest deadline, Next step, Name or Waiting longest. Closest deadline puts late ones first and people with no deadline last. Next step groups people who are at the same step. Waiting longest puts people with no progress first, then whoever marked a step the longest time ago. The rank number on each row is always the true rank. The choice is remembered on that device. Everyone else always sees the ranking.
+- **Rows stay put while you work**: when you mark a step, rows do not move, even if someone passes someone else. An **Update order** button appears when the real order has changed. Tap it to sort the rows again.
 
 Someone you add as a collaborator on the repository can make their own token and edit too.
 

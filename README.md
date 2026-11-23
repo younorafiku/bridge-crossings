@@ -17,6 +17,8 @@ One page that shows every participant's progress through the steps of their work
 | `logic.js` | Ranking, bar and deadline rules, search, sorting, and every kind of change |
 | `data.json` | The saved data: categories, settings, people |
 | `test.js` | Tests for the rules. Run `node --test` |
+| `tools/log.js` | Logs changes by name (add people, steps done, deadlines) and works out the calendar entries. Used by Claude |
+| `tools/log.test.js` | Tests for the logging tool |
 
 ## Look at it without saving anything
 
@@ -44,6 +46,22 @@ What the admin can do:
 Someone you add as a collaborator on the repository can make their own token and edit too.
 
 A change shows for the admin straight away, and for everyone else after GitHub republishes the page, usually within a minute.
+
+## Logging by chat
+
+The admin can also tell Claude what happened ("Hiba finished Script, new deadline Dec 3, add Omar to Editing") and Claude logs it. `tools/log.js` does the work:
+
+```
+node tools/log.js data.json show                                  # who is where
+node tools/log.js data.json sync                                  # every deadline as a calendar entry
+node tools/log.js data.json '[{"do":"done","name":"Hiba"}]'       # dry run: prints what would change
+node tools/log.js data.json '[{"do":"done","name":"Hiba"}]' --write
+```
+
+- Names ignore capitals and accents, and part of a name is enough when only one person matches.
+- All the actions in one message go through together. If one fails (unknown name, a step out of order, a bad date), nothing is changed.
+- Changes use the same rules as the page, so the bar, the rank and the deadline behave the same.
+- Each deadline is an all-day entry in Google Calendar titled `Name: next step due`. It is moved when the date changes, renamed when the next step changes, and deleted when the deadline is cleared.
 
 ## Data
 

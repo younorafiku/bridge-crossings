@@ -114,6 +114,8 @@ h1 em { font-style: italic; font-weight: 500; }
 .btn.danger { color: var(--late); border-color: #E6C5BB; }
 .btn.danger:hover:not(:disabled) { background: #FBF1EE; border-color: var(--late); }
 .btn:disabled { opacity: .4; cursor: not-allowed; }
+.btn.hold { border-color: var(--ink); }
+.btn.hold::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 9px; border-radius: 50%; background: #E5A100; }
 .linkbtn { background: none; border: 0; padding: 8px 0; color: var(--mute); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; font-size: 14px; }
 
 /* Admin bar */
@@ -240,7 +242,7 @@ h1 em { font-style: italic; font-weight: 500; }
 
   var state = {
     data: T.normalize({}), sha: '', token: '', admin: false, loaded: false, pending: 0, first: true,
-    status: '', sig: '', query: '', cat: 'all'
+    status: '', sig: '', query: '', cat: 'all', hold: null, moved: false
   };
 
   // ---------- small helpers ----------
@@ -556,8 +558,37 @@ h1 em { font-style: italic; font-weight: 500; }
     return row;
   }
 
+  // Admin view: rows stay where they are while the admin works, so they never move under a tap.
+  // The rank column still shows the true rank. "Update order" sorts the rows by it again.
+  function sectionsFor(d) {
+    var secs = T.sections(d);
+    state.moved = false;
+    if (!state.admin) return secs;
+    if (!state.hold) state.hold = {};
+    secs.forEach(function (s) {
+      var id = s.category.id, ids = state.hold[id];
+      if (!ids) { state.hold[id] = s.items.map(function (it) { return it.person.id; }); return; }
+      var pos = {};
+      ids.forEach(function (pid, i) { pos[pid] = i; });
+      var known = s.items.filter(function (it) { return pos[it.person.id] !== undefined; })
+        .sort(function (a, b) { return pos[a.person.id] - pos[b.person.id]; });
+      var fresh = s.items.filter(function (it) { return pos[it.person.id] === undefined; });
+      fresh.forEach(function (it) { ids.push(it.person.id); });   // new people go to the end and stay there
+      var held = known.concat(fresh);
+      if (held.some(function (it, i) { return it !== s.items[i]; })) state.moved = true;
+      s.items = held;
+    });
+    return secs;
+  }
+
+  function resortRows() {
+    state.hold = null;
+    render();
+    toast('Rows sorted by rank.');
+  }
+
   function renderSections(d) {
-    var host = $('sections'), q = state.query.trim();
+    var host = $('sections'), q = state.query.trim(), secs = sectionsFor(d);
     host.textContent = '';
     if (!d.people.length) {
       host.appendChild(h('ol', { class: 'rows' }, h('li', { class: 'row empty',
@@ -565,7 +596,7 @@ h1 em { font-style: italic; font-weight: 500; }
       return;
     }
     var fills = [], tdy = T.isoDate(new Date()), shown = 0;
-    T.sections(d).forEach(function (s, idx) {
+    secs.forEach(function (s, idx) {
       var c = s.category;
       if (state.cat !== 'all' && state.cat !== c.id) return;
       var items = s.items.filter(function (it) { return T.matchName(it.person.name, q); });
@@ -604,6 +635,8 @@ h1 em { font-style: italic; font-weight: 500; }
     bar.appendChild(h('div', { class: 'wrap in' },
       h('strong', { text: DEMO ? 'Demo admin' : 'Admin' }),
       h('span', { class: 'status', id: 'status', text: statusText() }),
+      state.moved ? h('button', { class: 'btn hold', type: 'button', onclick: resortRows,
+        title: 'Rows stay where they are while you work. Tap to sort them by rank.' }, 'Update order') : null,
       h('button', { class: 'btn primary', type: 'button', onclick: function () { openPerson(null); } }, 'Add person'),
       h('button', { class: 'btn', type: 'button', onclick: openCategories }, 'Categories'),
       h('button', { class: 'btn', type: 'button', onclick: openSettings }, 'Settings'),
@@ -614,9 +647,9 @@ h1 em { font-style: italic; font-weight: 500; }
     var d = state.data;
     if (state.cat !== 'all' && !d.categories.some(function (c) { return c.id === state.cat; })) state.cat = 'all';
     renderHead(d);
-    renderAdminBar();
     renderTools(d);
     renderSections(d);
+    renderAdminBar();
     renderFoot(d);
     state.first = false;
   }
@@ -876,7 +909,7 @@ h1 em { font-style: italic; font-weight: 500; }
           return readRemote();
         }).then(function (r) {
           saveToken(t);
-          state.admin = true; state.data = r.data; state.sha = r.sha; state.sig = r.data.rev + '|' + r.data.updatedAt;
+          state.admin = true; state.hold = null; state.data = r.data; state.sha = r.sha; state.sig = r.data.rev + '|' + r.data.updatedAt;
           m.close();
           render();
           toast('Signed in. You can edit now.');
@@ -891,7 +924,7 @@ h1 em { font-style: italic; font-weight: 500; }
   function signOut() {
     if (DEMO) { location.search = '?demo=1'; return; }
     clearToken();
-    state.token = ''; state.admin = false; state.status = '';
+    state.token = ''; state.admin = false; state.status = ''; state.hold = null; state.moved = false;
     refresh(true);
     render();
   }

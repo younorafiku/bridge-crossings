@@ -1,5 +1,5 @@
 {
-  "rev": 26,
+  "rev": 27,
   "title": "Bridge Crossings",
   "subtitle": "Reels progress",
   "about": "One reel each: your field, explained to people outside it. A full bar is one finished reel. Check your next step and its deadline, and see how the whole group is moving.",
@@ -42,12 +42,12 @@
       "id": "pmwtnk5dn1um1",
       "name": "Redouane ouzaouite medecine",
       "categoryId": "main",
-      "color": "#F1BF5B",
+      "color": "#7C9BF0",
       "cycles": 0,
       "done": 0,
       "deadline": "",
       "progressAt": ""
     }
   ],
-  "updatedAt": "2026-11-23T19:22:15.227Z"
+  "updatedAt": "2026-11-23T19:22:22.984Z"
 }
